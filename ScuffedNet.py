@@ -38,6 +38,7 @@ class ScuffedNet():
             
             deltas = []
             outputs = self.forward(xTrain)
+            print(outputs[1])
             
             # add final layers deltas/errors
             deltas.append(outputs[-1] - yTrain)
@@ -45,15 +46,13 @@ class ScuffedNet():
             for curLayer in reversed(range(len(self.__layers) - 1)):
                 # curLayer + 1 because len(self.__layers) = len(outputs) - 1
                 curOutputs = outputs[curLayer + 1]
-
                 nextLayer = self.__layers[curLayer + 1]
                 curLayer = self.__layers[curLayer]
 
                 nextWeights = nextLayer["layer"].weights
                 
                 removeWeightBias = nextWeights.T[:, 1:] if nextLayer["layer"].hasBias else nextWeights.T
-                removeOutputBias = curOutputs[:, 1:] if curLayer["layer"].hasBias else curOutputs
-                
+                removeOutputBias = curOutputs[:, 1:] if nextLayer["layer"].hasBias else curOutputs
                 deltas.append(curLayer["activation"].derivActivation(removeOutputBias) * np.dot(deltas[-1], removeWeightBias))
 
             for curOutput, curDelta, curLayer in zip(outputs[:-1], reversed(deltas), self.__layers):
@@ -63,8 +62,9 @@ class ScuffedNet():
             
 
 net = ScuffedNet()
-net.addLayer(ScuffedLayers.LinearLayer(3, 5), ScuffedActivations.Sigmoid)
-net.addLayer(ScuffedLayers.LinearLayer(5, 3), ScuffedActivations.Identity)
+net.addLayer(ScuffedLayers.LinearLayer(3, 4, False), ScuffedActivations.Sigmoid)
+net.addLayer(ScuffedLayers.LinearLayer(4, 6), ScuffedActivations.Sigmoid)
+net.addLayer(ScuffedLayers.LinearLayer(6, 3, False), ScuffedActivations.Identity)
 
 net.train(np.array([[20, 2, 3], [100, 200, 300]]), np.array([[1, 2, 3], [100, 200, 300]]), 20)
 print(net.makePred([20, 2, 3]))
