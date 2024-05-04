@@ -1,5 +1,6 @@
 from typing import Optional, List
 import numpy as np
+from sklearn.preprocessing import OneHotEncoder
 import ScuffedActivations
 import ScuffedLayers
 import ScuffedCostFunctions
@@ -44,8 +45,7 @@ class ScuffedNet():
             outputs, finalTransform = self.forward(xTrain)
             
             if ((epoch % 100) == 0 or numEpochs - 1 == epoch) and printEpochs:
-                print("Cost at epoch#{}: {}".format(epoch, self.costFunction.computeCost(yTrain, finalTransform)))
-
+                print("Cost at epoch#{}: {}".format(epoch, self.costFunction.computeCost(yTrain, finalTransform, outputs[-1])))
 
             # add final layers deltas/errors
             deltas.append(self.costFunction.computeFirstDelta(outputs[-1], yTrain, self.__layers[-1]["activation"], finalTransform))
@@ -67,41 +67,51 @@ class ScuffedNet():
                 avgPartial = np.average(curPartial, axis=0)
                 curLayer["layer"].gradientUpdate(-self.alpha, avgPartial)
 
-
-
-
 np.random.seed(48) 
 
-net = ScuffedNet(ScuffedCostFunctions.MSE, 1)
-net.addLayer(ScuffedLayers.LinearLayer(3, 5, True), ScuffedActivations.Sigmoid)
+net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), 1)
+net.addLayer(ScuffedLayers.LinearLayer(2, 5, True), ScuffedActivations.Sigmoid)
 net.addLayer(ScuffedLayers.LinearLayer(5, 4, True), ScuffedActivations.Sigmoid)
-net.addLayer(ScuffedLayers.LinearLayer(4, 3, True), ScuffedActivations.Identity)
+net.addLayer(ScuffedLayers.LinearLayer(4, 3, True), ScuffedActivations.SoftMax)
 
-net.train(np.array([[20, 2, 3], [100, 200, 300], [23, 23, 23]]), np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]]), 5000)
-print(net.makePred([100, 200, 300]))
+
+
+# net.train(np.array([[20, 2, 3], [100, 200, 300], [23, 23, 23]]), np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]]), 5000)
+# print(net.makePred([100, 200, 300]))
 
 # Load the iris dataset
 
-# iris = load_iris()
+iris = load_iris()
 
-# X = iris.data
-# X = iris.data[:, 2:] 
-# y = iris.target
-# # Restructure y to have shape (150, 1)
-# y = y.reshape(-1, 1)
+X = iris.data
+X = iris.data[:, 2:] 
+y = iris.target
+# Restructure y to have shape (150, 1)
+y = y.reshape(-1, 1)
 
-#  # for reproducible randomization 
-# random_indices = np.random.permutation(len(X))  # genrate random permutation of indices
+ # for reproducible randomization 
+random_indices = np.random.permutation(len(X))  # genrate random permutation of indices
 
-# X= X[random_indices]
-# y = y[random_indices]
-# y = (y==2).astype('int')
+X= X[random_indices]
+y = y[random_indices]
+
+num_classes = len(np.unique(y))
+
+# Create an empty one-hot encoded array
+y_one_hot = np.zeros((len(y), num_classes))
+
+# Fill the one-hot encoded array
+for i in range(len(y)):
+    y_one_hot[i, y[i]] = 1
+# y_one_hot now contains the one-hot encoded representations of the original labels in y
 
 # # Train the network using the iris dataset
-# net.train(X, y, numEpochs=10000, printEpochs=True)
-# # # Make predictions on new data
-# new_data = X[:]
-# predictions = [net.makePred(data) for data in new_data]
-# # print(predictions)
+net.train(X, y_one_hot, numEpochs=50000, printEpochs=True)
+# # Make predictions on new data
+new_data = X[:]
+predictions = [net.makePred(data) for data in new_data]
+max_probabilities = [np.argmax(pred) for pred in predictions]
+correct_predictions = [max_prob == y_val for max_prob, y_val in zip(max_probabilities, y)]
+print(sum(correct_predictions))
 
     

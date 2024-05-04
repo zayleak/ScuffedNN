@@ -5,38 +5,46 @@ import ScuffedActivations
 
 class CostFunction(ABC):
 
-    @abstractmethod
-    def computeFirstDelta(finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
+    def __init__(self):
         pass
 
     @abstractmethod
-    def computeCost(yTrain: np.ndarray, finalTransform: np.ndarray):
+    def computeFirstDelta(self, finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
+        pass
+
+    @abstractmethod
+    def computeCost(self, yTrain: np.ndarray, finalTransform: np.ndarray, finalOutput: np.ndarray) -> float:
         pass
 
 class MSE(CostFunction):
 
-    def computeFirstDelta(finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
+    def computeFirstDelta(self, finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
         return (finalOutput - yTrain)*activationFcn.derivActivation(finalOutput)
     
-    def computeCost(yTrain: np.ndarray, finalTransform: np.ndarray):
+    def computeCost(self, yTrain: np.ndarray, finalTransform: np.ndarray):
         return super().computeCost(finalTransform)
     
-# this should be used if the final layers activation function is a softmax function for probabilities
+# this should be used if the final layers activation function is a sigmoid function saying if its part of a certian class or not
 class BinaryCrossEntropyLoss(CostFunction):
 
-    def computeFirstDelta(finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
+    def computeFirstDelta(self, finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
         m = yTrain.shape[0]
         return (1/m)*((1/(1+np.exp(-finalTransform))) - yTrain)
     
-    def computeCost(yTrain: np.ndarray, finalTransform: np.ndarray):
+    def computeCost(self, yTrain: np.ndarray, finalTransform: np.ndarray):
         m = yTrain.shape[0]
         return (1/m) * np.sum(np.maximum(finalTransform, 0) - finalTransform*yTrain + np.log(1+ np.exp(- np.abs(finalTransform))))
     
-# this should be used if the final layers activation function is a sigmoid function saying if its part of a certian class or not
+# this should be used if the final layers activation function is a softmax function for probabilities
 class MultiCrossEntropyLoss(CostFunction):
 
-    def computeFirstDelta(finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
-        return (finalOutput - yTrain)
+    def computeFirstDelta(self, finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
+        m = yTrain.shape[0]
+        return (1/m)*((1/(1+np.exp(-finalTransform))) - yTrain)
     
-    def computeCost(yTrain: np.ndarray, finalTransform: np.ndarray):
-        return super().computeCost(finalTransform)
+    def computeCost(self, yTrain: np.ndarray, finalTransform: np.ndarray, finalOutput: np.ndarray):
+        m = yTrain.shape[0]
+        logProb = np.log(finalOutput) * yTrain
+        return -np.sum(logProb)*(1/m)
+    
+    
