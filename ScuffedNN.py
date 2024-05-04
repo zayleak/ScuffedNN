@@ -39,7 +39,6 @@ class SimpleFeedForward:
             deltaTwos = derivSigmoid(W1Outputs[:, 1:]) * np.dot(deltaThrees, self.W2.T[:, 1:])
             # deltaTwos size (N x O) -> (N x 1 x O) and inputWith bias -> (N x F + 1 x 1)
             # resulting in collections of matrices of partial derivs(w, i, j) -> wth training vector, oi*deltaj       
-
             W1Partial = deltaTwos[:, np.newaxis, :] * inputWithBias[:, :, np.newaxis]
             W2Partial = deltaThrees[:, np.newaxis, :] * W1Outputs[:, :, np.newaxis] 
 
