@@ -43,6 +43,3 @@ class SoftMax(ActivationFunction):
     
     def derivActivation(layerOutputs: np.ndarray) -> np.ndarray:
         pass
-        # id = np.identity(max(layerOutputs.shape[0], layerOutputs.shape[1]))
-
-        # return softMax * (1 - softMax)

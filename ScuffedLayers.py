@@ -1,16 +1,19 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import ScuffedWeightInit
 
 class LinearLayer(ABC):
-    def __init__(self, inputLayerSize: int, outputLayerSize: int, hasBias: bool = True) -> None:
-        self.__weights = np.random.randn(inputLayerSize, outputLayerSize) / (np.sqrt(inputLayerSize))
+    def __init__(self, inputLayerSize: int, outputLayerSize: int, hasBias: bool = True, weightInit: ScuffedWeightInit.ScuffedWeights = ScuffedWeightInit.Standard) -> None:
+        self.weightInit = weightInit
         self.__hasBias = hasBias
-        if hasBias:
-            self.__weights = np.vstack((np.zeros((1, outputLayerSize)), self.__weights))
-    
-    @property
-    def hasBias(self) -> bool:
-        return self.__hasBias
+        self.inputLayerSize = inputLayerSize
+        self.outputLayerSize = outputLayerSize
+        self.initWeights()
+        
+    def initWeights(self):
+        self.__weights = self.weightInit.getWeights(self.inputLayerSize, self.outputLayerSize)
+        if self.__hasBias:
+            self.__weights = np.vstack((np.zeros((1, self.outputLayerSize)), self.__weights))
     
     @property
     def hasBias(self) -> bool:
