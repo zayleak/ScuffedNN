@@ -20,21 +20,22 @@ class ScuffedNet():
     def getLayers(self):
         return self.__layers
     
-    def getOutputs(self, xTrain: np.ndarray):
+    def getForwardResults(self, xTrain: np.ndarray):
         outputs = []
+        transforms = []
         output = xTrain
         for nextLayer in range(len(self.__layers)):
             nextLayer = self.__layers[nextLayer]
             output = np.hstack((np.ones((len(xTrain), 1)), output)) if nextLayer["layer"].hasBias else output
             outputs.append(output)
             output = nextLayer["layer"].forward(output)
-            finalTransform = output
+            transforms.append(output)
             output = nextLayer["activation"].activation(output)
         outputs.append(output)
-        return outputs, finalTransform
+        return outputs, transforms
     
     def makePred(self, x: List[float]):
-        outputs, _ = self.forward(np.array([x]))
+        outputs, _ = self.getForwardResults(np.array([x]))
         return outputs[-1].flatten()
     
     def resetWeights(self):
@@ -51,7 +52,8 @@ class ScuffedNet():
         for epoch in range(numEpochs):
             
             deltas = []
-            outputs, finalTransform = self.getOutputs(xTrain)
+            outputs, transforms = self.getForwardResults(xTrain)
+            finalTransform = transforms[-1]
             
             if ((epoch % 100) == 0 or numEpochs - 1 == epoch) and printEpochs:
                 print("Cost at epoch#{}: {}".format(epoch, self.costFunction.computeCost(yTrain, finalTransform, outputs[-1])))
@@ -62,6 +64,7 @@ class ScuffedNet():
             for curLayer in reversed(range(len(self.__layers) - 1)):
                 # curLayer + 1 because len(self.__layers) = len(outputs) - 1
                 curOutputs = outputs[curLayer + 1]
+                curTransforms = transforms[curLayer]
                 nextLayer = self.__layers[curLayer + 1]
                 curLayer = self.__layers[curLayer]
                 
@@ -69,7 +72,7 @@ class ScuffedNet():
 
                 removeWeightBias = nextWeights.T[:, 1:] if nextLayer["layer"].hasBias else nextWeights.T
                 removeOutputBias = curOutputs[:, 1:] if nextLayer["layer"].hasBias else curOutputs
-                deltas.append(curLayer["activation"].derivActivation(removeOutputBias) * np.dot(deltas[-1], removeWeightBias))
+                deltas.append(curLayer["activation"].derivActivation(removeOutputBias, curTransforms) * np.dot(deltas[-1], removeWeightBias))
             
             for curOutput, curDelta, curLayer in zip(outputs[:-1], reversed(deltas), self.__layers):
                 curPartial = curOutput[:, :, np.newaxis] * curDelta[:, np.newaxis, :]
@@ -79,9 +82,9 @@ class ScuffedNet():
 np.random.seed(48) 
 
 net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), 1)
-net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
-net.addLayer(ScuffedLayers.LinearLayer(5, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
-net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
+net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.Xavier), ScuffedActivations.LeakyReLU())
+net.addLayer(ScuffedLayers.LinearLayer(5, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Tanh())
+net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid())
 
 
 
@@ -113,4 +116,4 @@ num_classes = len(np.unique(y))
 y_onehot = np.zeros((len(y), num_classes))
 y_onehot[np.arange(len(y)), y.flatten()] = 1
 
-ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [10000, 10000, 10000], net, X, y_onehot, False)
+ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [1000, 1000, 1000], net, X, y_onehot)

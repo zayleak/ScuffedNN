@@ -11,7 +11,7 @@ def oneHotEncode(data: np.ndarray) -> np.ndarray:
 
 def getAccuracies(XSet: np.ndarray, YSet: np.ndarray, net) -> float:
     size = len(XSet)
-    outputs, _ = net.getOutputs(np.array(XSet))
+    outputs, _ = net.getForwardResults(np.array(XSet))
     predictions = net.costFunction.getCorrectPreds(outputs[-1], YSet)
     trainAccuracy = sum(predictions) / size
     return trainAccuracy

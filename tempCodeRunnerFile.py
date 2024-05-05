@@ -1,1 +1,1 @@
-print(predictions)
+getForwardResults
