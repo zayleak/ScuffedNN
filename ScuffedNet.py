@@ -20,7 +20,7 @@ class ScuffedNet():
     def getLayers(self):
         return self.__layers
     
-    def forward(self, xTrain: np.ndarray):
+    def getOutputs(self, xTrain: np.ndarray):
         outputs = []
         output = xTrain
         for nextLayer in range(len(self.__layers)):
@@ -36,6 +36,10 @@ class ScuffedNet():
     def makePred(self, x: List[float]):
         outputs, _ = self.forward(np.array([x]))
         return outputs[-1].flatten()
+    
+    def resetWeights(self):
+        for layer in self.__layers:
+            layer["layer"].initWeights()
 
     def train(self, xTrain: np.ndarray, yTrain: np.ndarray, numEpochs: int = 1000, printEpochs : bool = False) -> None:
         # xTrain list of [(inputLayerSize,)]
@@ -47,7 +51,7 @@ class ScuffedNet():
         for epoch in range(numEpochs):
             
             deltas = []
-            outputs, finalTransform = self.forward(xTrain)
+            outputs, finalTransform = self.getOutputs(xTrain)
             
             if ((epoch % 100) == 0 or numEpochs - 1 == epoch) and printEpochs:
                 print("Cost at epoch#{}: {}".format(epoch, self.costFunction.computeCost(yTrain, finalTransform, outputs[-1])))
@@ -74,10 +78,10 @@ class ScuffedNet():
 
 np.random.seed(48) 
 
-net = ScuffedNet(ScuffedCostFunctions.BinaryCrossEntropyLoss(), 1)
+net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), 1)
 net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
 net.addLayer(ScuffedLayers.LinearLayer(5, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
-net.addLayer(ScuffedLayers.LinearLayer(3, 1, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
+net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid)
 
 
 
@@ -93,7 +97,10 @@ X = iris.data[:, 2:]
 y = iris.target
 # Restructure y to have shape (150, 1)
 y = y.reshape(-1, 1)
-y = (y==2).astype('int')
+
+# One-hot encode y
+
+
 
  # for reproducible randomization 
 random_indices = np.random.permutation(len(X))  # genrate random permutation of indices
@@ -101,4 +108,9 @@ random_indices = np.random.permutation(len(X))  # genrate random permutation of 
 X= X[random_indices]
 y = y[random_indices]
 
-ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [10000, 1000, 1000], net, X, y, True)
+# y = (y==2).astype('int')
+num_classes = len(np.unique(y))
+y_onehot = np.zeros((len(y), num_classes))
+y_onehot[np.arange(len(y)), y.flatten()] = 1
+
+ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [10000, 10000, 10000], net, X, y_onehot, False)

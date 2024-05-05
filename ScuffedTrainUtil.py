@@ -1,14 +1,19 @@
 import matplotlib.pyplot as plt
 from typing import Optional, List
 import numpy as np
-from sklearn.datasets import load_iris
+
+def oneHotEncode(data: np.ndarray) -> np.ndarray:
+    numUnique = data.shape[1]
+    oneHot = np.zeros((len(data), numUnique))
+    for i, val in enumerate(data):
+        oneHot[i, np.argmax(val)] = 1
+    return oneHot
 
 def getAccuracies(XSet: np.ndarray, YSet: np.ndarray, net) -> float:
     size = len(XSet)
-    trainPredictions = net.forward(XSet)[-1]
-    trainProbs = [1 if XVal > 0.5 else 0 for XVal in trainPredictions]
-    trainCorrectPredictions = [YVal == XVal for XVal, YVal in zip(trainProbs, YSet)]
-    trainAccuracy = sum(trainCorrectPredictions) / size
+    outputs, _ = net.getOutputs(np.array(XSet))
+    predictions = net.costFunction.getCorrectPreds(outputs[-1], YSet)
+    trainAccuracy = sum(predictions) / size
     return trainAccuracy
 
 def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xall: np.ndarray, Yall: np.ndarray, printEpochs: bool = True) -> None:
@@ -26,8 +31,7 @@ def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xal
         trainAccuracies.append(getAccuracies(XTrain, YTrain, net))
         validationAccuracies.append(getAccuracies(XVal, YVal, net))
 
-        for layer in net.getLayers():
-            layer["layer"].initWeights()
+        net.resetWeights()
 
     plt.plot(trainSizes, trainAccuracies, label='Training Accuracy')
     plt.plot(trainSizes, validationAccuracies, label='Validation Accuracy')
