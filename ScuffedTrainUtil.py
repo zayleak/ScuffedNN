@@ -26,7 +26,9 @@ def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xal
         XVal = Xall[size:]
         YVal = Yall[size:]
 
+        net.setDropoutLayers(True)
         net.train(XTrain, YTrain, numEpochs=numEpochs, printEpochs=printEpochs)
+        net.setDropoutLayers(False)
 
         trainAccuracies.append(getAccuracies(XTrain, YTrain, net))
         validationAccuracies.append(getAccuracies(XVal, YVal, net))

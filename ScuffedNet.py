@@ -7,12 +7,17 @@ import ScuffedCostFunctions
 import ScuffedWeightInit
 from sklearn.datasets import load_iris
 import ScuffedTrainUtil
+import ScuffedRegularizations
 
 class ScuffedNet():
-    def __init__(self, costFunction : ScuffedCostFunctions.CostFunction = ScuffedCostFunctions.MSE, alpha: float = 0.1) -> None:
+    def __init__(self, 
+                 costFunction : ScuffedCostFunctions.CostFunction = ScuffedCostFunctions.MSE(), 
+                 regularizations: List[ScuffedRegularizations.RegularizationMethod] = [], 
+                 alpha: float = 0.1) -> None:
         self.alpha = alpha
         self.costFunction = costFunction
         self.__layers = []
+        self.regularizations = regularizations
 
     def addLayer(self, layer: ScuffedLayers.LinearLayer, activationFcn: ScuffedActivations.ActivationFunction) -> None:
         self.__layers.append({"layer": layer, "activation": activationFcn})
@@ -38,11 +43,26 @@ class ScuffedNet():
         outputs, _ = self.getForwardResults(np.array([x]))
         return outputs[-1].flatten()
     
+    def setDropoutLayers(self, setIsTraining: bool = True):
+        for layer in self.__layers:
+            if isinstance(layer["layer"], ScuffedLayers.DropoutLayer):
+                layer["layer"].isTraining = setIsTraining
+
     def resetWeights(self):
         for layer in self.__layers:
             layer["layer"].initWeights()
 
-    def train(self, xTrain: np.ndarray, yTrain: np.ndarray, numEpochs: int = 1000, printEpochs : bool = False) -> None:
+    def getWeights(self):
+        return [curLayer["layer"].weights for curLayer in self.__layers]
+
+    def calculateTotalCost(self, yTrain: np.ndarray, finalTransform: np.ndarray, finalOutput: np.ndarray):
+        totalCost = self.costFunction.computeCost(yTrain, finalTransform, finalOutput)
+        sumWeightsSquared = sum([np.sum(np.square(weight)) for weight in self.getWeights()])
+        for regularizationMethod in self.regularizations:
+            totalCost += regularizationMethod.computeCost(sumWeightsSquared, yTrain.shape[0])
+        return totalCost
+
+    def train(self, xTrain: np.ndarray, yTrain: np.ndarray, numEpochs: int = 1000, printEpochs : bool = False):
         # xTrain list of [(inputLayerSize,)]
         # yTrain list of [(outputLayerSize,)]
 
@@ -56,7 +76,7 @@ class ScuffedNet():
             finalTransform = transforms[-1]
             
             if ((epoch % 100) == 0 or numEpochs - 1 == epoch) and printEpochs:
-                print("Cost at epoch#{}: {}".format(epoch, self.costFunction.computeCost(yTrain, finalTransform, outputs[-1])))
+                print("Cost at epoch#{}: {}".format(epoch, self.calculateTotalCost(yTrain, finalTransform, outputs[-1])))
 
             # add final layers deltas/errors
             deltas.append(self.costFunction.computeFirstDelta(outputs[-1], yTrain, self.__layers[-1]["activation"], finalTransform))
@@ -77,17 +97,16 @@ class ScuffedNet():
             for curOutput, curDelta, curLayer in zip(outputs[:-1], reversed(deltas), self.__layers):
                 curPartial = curOutput[:, :, np.newaxis] * curDelta[:, np.newaxis, :]
                 avgPartial = np.average(curPartial, axis=0)
-                curLayer["layer"].gradientUpdate(-self.alpha, avgPartial)
+                curLayer["layer"].backpropStep(-self.alpha, avgPartial, self.regularizations, yTrain.shape[0])
 
 np.random.seed(48) 
 
-net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), 1)
-net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.Xavier), ScuffedActivations.LeakyReLU())
-net.addLayer(ScuffedLayers.LinearLayer(5, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Tanh())
-net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.Sigmoid())
+regularizationsList = [ScuffedRegularizations.L1Regularization(0.01)]
 
-
-
+net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), regularizationsList, 1)
+net.addLayer(ScuffedLayers.DropoutLayer(2, 5, True, ScuffedWeightInit.Xavier), ScuffedActivations.LeakyReLU())
+net.addLayer(ScuffedLayers.DropoutLayer(5, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.LeakyReLU())
+net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.SoftMax())
 
 # net.train(np.array([[20, 2, 3], [100, 200, 300], [23, 23, 23]]), np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]]), 5000)
 # print(net.makePred([100, 200, 300]))
@@ -116,4 +135,4 @@ num_classes = len(np.unique(y))
 y_onehot = np.zeros((len(y), num_classes))
 y_onehot[np.arange(len(y)), y.flatten()] = 1
 
-ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [1000, 1000, 1000], net, X, y_onehot)
+ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [10000, 10000, 10000], net, X, y_onehot)

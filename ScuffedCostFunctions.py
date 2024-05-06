@@ -6,9 +6,6 @@ import ScuffedTrainUtil
 
 class CostFunction(ABC):
 
-    # def __init__(self):
-    #     pass
-
     @abstractmethod
     def computeFirstDelta(self, finalOutput: np.ndarray, yTrain: np.ndarray, activationFcn: ScuffedActivations.ActivationFunction, finalTransform: np.ndarray) -> np.ndarray:
         pass
