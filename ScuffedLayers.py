@@ -47,15 +47,15 @@ class DropoutLayer(LinearLayer):
                  weightInit: ScuffedWeightInit.ScuffedWeights = ScuffedWeightInit.Standard, 
                  isTraining: bool = True,
                  dropoutRate: float = 0.25) -> None:
+        super().__init__(inputLayerSize, outputLayerSize, hasBias, weightInit)
         self.isTraining = isTraining
         self.dropoutRate = dropoutRate
-        super().__init__(inputLayerSize, outputLayerSize, hasBias, weightInit)
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         if self.isTraining:
-            return np.dot(x * np.random.binomial(1, 1 - self.dropoutRate, size=x.shape) / (1 - self.dropoutRate), self.weights)
+            return super().forward(x * np.random.binomial(1, 1 - self.dropoutRate, size=x.shape) / (1 - self.dropoutRate))
         else:
-            return np.dot(x, self.weights)
+            return super().forward(x)
 
 
 

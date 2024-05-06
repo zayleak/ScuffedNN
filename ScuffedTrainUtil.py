@@ -16,6 +16,48 @@ def getAccuracies(XSet: np.ndarray, YSet: np.ndarray, net) -> float:
     trainAccuracy = sum(predictions) / size
     return trainAccuracy
 
+def getPrecisionRecall(curClass: np.ndarray, curYClass: np.ndarray):
+    truePositives = sum((curClass == 1) & (curYClass == 1))
+    falsePositives = sum((curClass == 1) & (curYClass == 0))
+    falseNegitives = sum((curClass == 0) & (curYClass == 1))
+
+    if truePositives == 0:
+        return 0.0, 0.0
+
+    return truePositives / (truePositives + falsePositives), truePositives / (truePositives + falseNegitives)
+
+def getFScore(precision: float, recall: float) -> float:
+    if precision == 0 or recall == 0:
+        return 0.0
+    else:
+        return precision * recall / (precision + recall)
+
+def nanZero(number: int) -> float:
+    if np.isnan(number):
+        return 0.0
+    else:
+        return number
+
+def printPerformenceMetrics(XSet: np.ndarray, YSet: np.ndarray, net) -> float:
+    outputs, _ = net.getForwardResults(np.array(XSet))
+    predictions = net.costFunction.getPreds(outputs[-1])
+
+    if isinstance(predictions[0], int):
+        predictions = np.array(predictions)[:, np.newaxis]
+
+    for classNumber in range(YSet.shape[1]):
+        curClass = predictions[:, classNumber]
+        curYClass = YSet[:, classNumber]
+        precision, recall = getPrecisionRecall(curClass, curYClass)
+        precision = nanZero(precision)
+        recall = nanZero(recall)
+
+        print(f"Precision for classNumber#{classNumber}: {precision}")
+        print(f"Recall for classNumber#{classNumber}: {recall}")
+        print(f"F-Score for classNumber#{classNumber}: {getFScore(precision, recall)}")
+        
+
+
 def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xall: np.ndarray, Yall: np.ndarray, printEpochs: bool = True) -> None:
     trainAccuracies = []
     validationAccuracies = []
@@ -26,13 +68,11 @@ def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xal
         XVal = Xall[size:]
         YVal = Yall[size:]
 
-        net.setDropoutLayers(True)
         net.train(XTrain, YTrain, numEpochs=numEpochs, printEpochs=printEpochs)
-        net.setDropoutLayers(False)
 
         trainAccuracies.append(getAccuracies(XTrain, YTrain, net))
         validationAccuracies.append(getAccuracies(XVal, YVal, net))
-
+        printPerformenceMetrics(XVal, YVal, net)
         net.resetWeights()
 
     plt.plot(trainSizes, trainAccuracies, label='Training Accuracy')
