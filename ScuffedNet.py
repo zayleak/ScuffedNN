@@ -57,42 +57,45 @@ class ScuffedNet():
     def getWeights(self):
         return [curLayer["layer"].weights for curLayer in self.__layers]
 
-    def calculateTotalCost(self, yTrain: np.ndarray, finalTransform: np.ndarray, finalOutput: np.ndarray):
-        totalCost = self.costFunction.computeCost(yTrain, finalTransform, finalOutput)
+    def calculateTotalCost(self, YBatch: np.ndarray, finalTransform: np.ndarray, finalOutput: np.ndarray):
+        totalCost = self.costFunction.computeCost(YBatch, finalTransform, finalOutput)
         sumWeightsSquared = sum([np.sum(np.square(weight)) for weight in self.getWeights()])
         for regularizationMethod in self.regularizations:
-            totalCost += regularizationMethod.computeCost(sumWeightsSquared, yTrain.shape[0])
+            totalCost += regularizationMethod.computeCost(sumWeightsSquared, YBatch.shape[0])
         return totalCost
     
+    def updateLayerGradient(self, curLayer: ScuffedLayers.LinearLayer, prevOutputs: np.ndarray, curDelta: np.ndarray, numTraining: int):
+        partialDerivs = prevOutputs[:, :, np.newaxis] * curDelta[:, np.newaxis, :]
+        avgPartial = np.average(partialDerivs, axis=0)
+        curLayer.backpropStep(-self.alpha, avgPartial, self.regularizations, numTraining)
+
     def epoch(self, XBatch: np.ndarray, YBatch: np.ndarray, epoch: int, printEpochs: bool = False):
 
-        deltas = []
         outputs, transforms = self.getForwardResults(XBatch)
         finalTransform = transforms[-1]
+        numTraining = YBatch.shape[0]
 
-        if (epoch % 100 == 0) and printEpochs:
+        if printEpochs:
             print("Cost at epoch#{}: {}".format(epoch, self.calculateTotalCost(YBatch, finalTransform, outputs[-1])))
 
         # add final layers deltas/errors
-        deltas.append(self.costFunction.computeFirstDelta(outputs[-1], YBatch, self.__layers[-1]["activation"], finalTransform))
+        curDelta = self.costFunction.computeFirstDelta(outputs[-1], YBatch, self.__layers[-1]["activation"], finalTransform)
+        self.updateLayerGradient(self.__layers[-1]["layer"], outputs[-2], curDelta, numTraining)
 
-        for curLayer in reversed(range(len(self.__layers) - 1)):
+        for layerNum in reversed(range(len(self.__layers) - 1)):
             # curLayer + 1 because len(self.__layers) = len(outputs) - 1
-            curOutputs = outputs[curLayer + 1]
-            curTransforms = transforms[curLayer]
-            nextLayer = self.__layers[curLayer + 1]
-            curLayer = self.__layers[curLayer]
-            
+            curOutputs = outputs[layerNum + 1]
+            prevOutputs = outputs[layerNum]
+
+            curTransforms = transforms[layerNum]
+            nextLayer = self.__layers[layerNum + 1]
+            curLayer = self.__layers[layerNum]
             nextWeights = nextLayer["layer"].weights
 
             removeWeightBias = nextWeights.T[:, 1:] if nextLayer["layer"].hasBias else nextWeights.T
             removeOutputBias = curOutputs[:, 1:] if nextLayer["layer"].hasBias else curOutputs
-            deltas.append(curLayer["activation"].derivActivation(removeOutputBias, curTransforms) * np.dot(deltas[-1], removeWeightBias))
-        
-        for curOutput, curDelta, curLayer in zip(outputs[:-1], reversed(deltas), self.__layers):
-            curPartial = curOutput[:, :, np.newaxis] * curDelta[:, np.newaxis, :]
-            avgPartial = np.average(curPartial, axis=0)
-            curLayer["layer"].backpropStep(-self.alpha, avgPartial, self.regularizations, YBatch.shape[0])
+            curDelta = curLayer["activation"].derivActivation(removeOutputBias, curTransforms) * np.dot(curDelta, removeWeightBias)
+            self.updateLayerGradient(curLayer["layer"], prevOutputs, curDelta, numTraining)
 
     def train(self, X: np.ndarray, Y: np.ndarray, numEpochs: int = 1000, printEpochs : bool = False):
         # xTrain list of [(inputLayerSize,)]
@@ -104,15 +107,17 @@ class ScuffedNet():
         self.setDropoutLayers(True)
 
         for epoch in range(numEpochs):
+            everyHundred = (epoch % 100 == 0) & printEpochs
+            
             if self.batchSize is None:
-                self.epoch(X, Y, epoch, printEpochs)
+                self.epoch(X, Y, epoch, everyHundred)
                 continue
 
             for batchStart in range(0, len(X), self.batchSize):
                 batchEnd = batchStart + self.batchSize
                 XBatch = X[batchStart:batchEnd]
                 YBatch = Y[batchStart:batchEnd]
-                self.epoch(XBatch, YBatch, epoch, printEpochs & (batchStart == 0))
+                self.epoch(XBatch, YBatch, epoch, everyHundred & (batchStart == 0))
 
         self.setDropoutLayers(False)
 
@@ -120,10 +125,10 @@ np.random.seed(48)
 
 regularizationsList = []
 
-net = ScuffedNet(ScuffedCostFunctions.MultiCrossEntropyLoss(), regularizationsList, 1, 20)
-net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.He), ScuffedActivations.Sigmoid())
-net.addLayer(ScuffedLayers.DropoutLayer(5, 3, True, ScuffedWeightInit.He), ScuffedActivations.Sigmoid())
-net.addLayer(ScuffedLayers.LinearLayer(3, 3, True, ScuffedWeightInit.Xavier), ScuffedActivations.SoftMax())
+net = ScuffedNet(ScuffedCostFunctions.BinaryCrossEntropyLoss(), regularizationsList, 1)
+net.addLayer(ScuffedLayers.LinearLayer(2, 5, True, ScuffedWeightInit.He), ScuffedActivations.Tanh())
+net.addLayer(ScuffedLayers.LinearLayer(5, 3, True, ScuffedWeightInit.He), ScuffedActivations.LeakyReLU())
+net.addLayer(ScuffedLayers.LinearLayer(3, 1, True, ScuffedWeightInit.He), ScuffedActivations.Sigmoid())
 
 # net.train(np.array([[20, 2, 3], [100, 200, 300], [23, 23, 23]]), np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]]), 5000, printEpochs=True)
 # print(net.makePred([100, 200, 300]))
@@ -147,9 +152,9 @@ random_indices = np.random.permutation(len(X))  # genrate random permutation of 
 X= X[random_indices]
 y = y[random_indices]
 
-#y = (y==2).astype('int')
-num_classes = len(np.unique(y))
-y_onehot = np.zeros((len(y), num_classes))
-y_onehot[np.arange(len(y)), y.flatten()] = 1
+y = (y==2).astype('int')
+# num_classes = len(np.unique(y))
+# y_onehot = np.zeros((len(y), num_classes))
+# y_onehot[np.arange(len(y)), y.flatten()] = 1
 
-ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [1000, 1000, 1000], net, X, y_onehot, False)
+ScuffedTrainUtil.trainWithLearningCurve([70, 80, 90], [10000, 10000, 1000], net, X, y, False)

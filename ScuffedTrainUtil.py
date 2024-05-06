@@ -62,7 +62,7 @@ def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xal
     trainAccuracies = []
     validationAccuracies = []
 
-    for size, numEpochs in zip(trainSizes, epochList):
+    for curTrainIndex, (size, numEpochs) in enumerate(zip(trainSizes, epochList)):
         XTrain = Xall[:size]
         YTrain = Yall[:size]
         XVal = Xall[size:]
@@ -72,7 +72,10 @@ def trainWithLearningCurve(trainSizes: List[int], epochList: List[int], net, Xal
 
         trainAccuracies.append(getAccuracies(XTrain, YTrain, net))
         validationAccuracies.append(getAccuracies(XVal, YVal, net))
+        print("-----------------------------")
+        print(f"Performance metrics for training index#{curTrainIndex} (On the validation set)")
         printPerformenceMetrics(XVal, YVal, net)
+        print("-----------------------------")
         net.resetWeights()
 
     plt.plot(trainSizes, trainAccuracies, label='Training Accuracy')
