@@ -4,13 +4,21 @@ I primarly used OOP for all of the functionality.
 
 ## Features:
 DropoutLayers
+
 L1 Regularization
+
 Multiple layers
+
 MSE, Binary Cross Entropy, and Multi-class Cross Entropy loss functions
+
 Tanh, ReLU, LeakyReLU, ELU, Sigmoid, Softmax Activation functions
+
 batch gradient descent
+
 Learning curves
+
 Random initialization, Xavier initialization, He initialization
+
 Accuracy, Precision, Recall, and F1 Score
 
 ## Example Usage:
