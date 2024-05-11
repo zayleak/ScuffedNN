@@ -1,8 +1,8 @@
-## Overview:
+## Overview
 ScuffedNN is a self made neural net using various different concepts across ML. It was made with primarly numpy, a little bit of matplot lib (for the analysis functions), and no tensorflow/pytorch. 
 I primarly used OOP for all of the functionality.
 
-## Features:
+## Features
 DropoutLayers
 
 L1 Regularization
@@ -21,7 +21,7 @@ Random initialization, Xavier initialization, He initialization
 
 Accuracy, Precision, Recall, and F1 Score
 
-## Example Usage:
+## Example Usage
 In this example:
 
 I created an L1 Regularization with a lambda of 0.01 (See https://towardsdatascience.com/l1-and-l2-regularization-methods-ce25e7fc831c for more details)
