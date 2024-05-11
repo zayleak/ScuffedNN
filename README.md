@@ -23,8 +23,11 @@ Accuracy, Precision, Recall, and F1 Score
 
 ## Example Usage:
 In this example:
+
 I created an L1 Regularization with a lambda of 0.01 (See https://towardsdatascience.com/l1-and-l2-regularization-methods-ce25e7fc831c for more details)
+
 I defined the net with Binary Cross Entropy Loss, A regularizationList (In our case just L1 Regularization), and a learning rate of 1
+
 I then I created 3 Layers with:
 
 Layer 1: Input size 2 output size 5 linear layer, with bias (The true), He initialization, and Tanh activation
