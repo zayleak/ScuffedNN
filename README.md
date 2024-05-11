@@ -20,7 +20,9 @@ I defined the net with Binary Cross Entropy Loss, A regularizationList (In our c
 I then I created 3 Layers with:
 
 Layer 1: Input size 2 output size 5 linear layer, with bias (The true), He initialization, and Tanh activation
+
 Layer 2: Input size 5 output size 3 linear layer, with bias (The true), He initialization, and LeakyReLU activation
+
 Layer 3: Input size 3 output size 1 linear layer, with bias (The true), He initialization, and Sigmoid activation (due to binary cross entropy loss)
 
 ![image](https://github.com/zayleak/ScuffedNN/assets/90633128/2479b715-57d9-4072-8e74-a7c4e64b7eb9)
