@@ -38,3 +38,22 @@ Layer 3: Input size 3 output size 1 linear layer, with bias (The true), He initi
 
 ![image](https://github.com/zayleak/ScuffedNN/assets/90633128/2479b715-57d9-4072-8e74-a7c4e64b7eb9)
 
+## Training Example 
+
+In this example:
+
+Using the same network as above
+
+did data preprocessing for Iris flowers (See https://github.com/RafayAK/NothingButNumPy/blob/master/Understanding_and_Creating_Binary_Classification_NNs/2_layer_toy_neural_network_on_all_iris_data.ipynb for more info)
+
+Then called trainWithLearningCurve util with Train sizes 70, 80, 90 and epoch sizes 10000, 10000, and 1000 respectively with my current neural net. The false is if you want to print epoch loss data (In this case I did not).
+
+Also, note you input the full data amount which includes both the validation and training data. Therefore the validation set sizes will be 150 - 70 = 80, 150 - 80 = 70, and 150 - 90 = 60 size respectively
+
+![image](https://github.com/zayleak/ScuffedNN/assets/90633128/704271be-91eb-4095-87ca-02df8fd2a2c1)
+
+This is the output I got for my model
+
+![image](https://github.com/zayleak/ScuffedNN/assets/90633128/583659ad-4dcd-426b-bbd4-a90157f422d1)
+
+
