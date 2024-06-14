@@ -2,7 +2,7 @@
 ScuffedNN is a self made neural net using various different concepts across ML. It was made with primarly numpy, a little bit of matplot lib (for the analysis functions), and no tensorflow/pytorch. 
 I primarly used OOP for all of the functionality.
 
-I have also wrote some articles documenting my experiences with this: 
+I have also wrote some articles documenting my experiences in learning about neural nets: 
 
 Article 1: https://zayleak.substack.com/p/creating-a-neural-net-from-scratch
 
