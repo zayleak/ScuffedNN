@@ -3,8 +3,11 @@ ScuffedNN is a self made neural net using various different concepts across ML. 
 I primarly used OOP for all of the functionality.
 
 I have also wrote some articles documenting my experiences with this: 
+
 Article 1: https://zayleak.substack.com/p/creating-a-neural-net-from-scratch
+
 Article 2: https://zayleak.substack.com/p/creating-a-neural-net-from-scratch-cdf
+
 Article 3: https://zayleak.substack.com/p/creating-a-neural-net-from-scratch-cf9
 
 ## Features
